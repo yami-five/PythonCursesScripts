@@ -1,2 +1,3 @@
 echo off
-python3 FilesList.py
+python3 FilesBrowser.py
+pause
