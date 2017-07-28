@@ -100,9 +100,6 @@ ShowWhatDirectoryContains()
 while True:
     key=stdscr.getch()
     if key==24: break
-    elif key==120:
-        os.chdir("folder")
-        ShowWhatDirectoryContains()
     elif key==258:
             ItemNumber=ItemNumber+1
             ItemNumber=LowerItem(ItemNumber)
@@ -113,8 +110,6 @@ while True:
             ChangeDirectory(ItemNumber)  
     else: print(key)
 
-
-        
 curses.nocbreak()
 stdscr.keypad(False)
 curses.endwin()
