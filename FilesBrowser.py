@@ -2,25 +2,37 @@ import os
 import curses
 def ShowWhatDirectoryContains(DirectoryList,ItemNumber):
         DirectoryList=os.listdir()
-        pad = curses.newpad(20, 50)
+        pad = curses.newpad(20, 40)
         curses.init_pair(1, curses.COLOR_RED, curses.COLOR_WHITE)
-        if len(os.getcwd())>3: 
-               for x in range(0,len(DirectoryList)+1):
+        if len(os.getcwd())>3:
+               if len(DirectoryList)>13: NumberOfElements=13
+               else: NumberOfElements=len(DirectoryList)+1
+               for x in range(0,NumberOfElements):
                        if x>0:
+                               if len(DirectoryList[x-1])>24:
+                                       ItemName=DirectoryList[x-1][0:20]+"..."
+                               else: ItemName=DirectoryList[x-1]
+
                                if x==ItemNumber:
-                                       pad.addstr(x,0,DirectoryList[x-1],curses.color_pair(1))
-                               else: pad.addstr(x,0,DirectoryList[x-1])
+                                       pad.addstr(x,0,ItemName,curses.color_pair(1))
+                               else: pad.addstr(x,0,ItemName)
                        else:
                                if x==ItemNumber:
                                        pad.addstr(x,0,"..",curses.color_pair(1))
                                else: pad.addstr(x,0,"..")
         else:
-               for x in range(0,len(DirectoryList)):
+               if len(DirectoryList)>13: NumberOfElements=13
+               else: NumberOfElements=len(DirectoryList)
+               for x in range(0,length):
+                       if len(DirectoryList[x])>24:
+                               ItemName=DirectoryList[x][0:20]+"..."
+                       else: ItemName=DirectoryList[x]
+                       
                        if x==ItemNumber:
-                               pad.addstr(x,0,DirectoryList[x],curses.color_pair(1))
-                       else: pad.addstr(x,0,DirectoryList[x])
+                               pad.addstr(x,0,ItemName,curses.color_pair(1))
+                       else: pad.addstr(x,0,ItemName)
         pad.addstr(15,0,"Press Ctrl+x for exit")
-        pad.refresh( 0,0, 2,5, 19,99)
+        pad.refresh( 0,0, 2,5, 19,39)
         
 def UpperItem(ItemNumber):
         DirectoryList=os.listdir()
@@ -59,7 +71,7 @@ def ChangeDirectory(ItemNumber):
         ShowWhatDirectoryContains(DirectoryList,ItemNumber)
         return ItemNumber
 
-os.system("mode con cols=100 lines=20")
+os.system("mode con cols=40 lines=20")
 stdscr=curses.initscr()
 ItemNumber=0
 curses.start_color()
