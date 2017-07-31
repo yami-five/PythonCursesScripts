@@ -23,7 +23,7 @@ def ShowWhatDirectoryContains(DirectoryList,ItemNumber):
         else:
                if len(DirectoryList)>13: NumberOfElements=13
                else: NumberOfElements=len(DirectoryList)
-               for x in range(0,length):
+               for x in range(0,NumberOfElements):
                        if len(DirectoryList[x])>24:
                                ItemName=DirectoryList[x][0:20]+"..."
                        else: ItemName=DirectoryList[x]
