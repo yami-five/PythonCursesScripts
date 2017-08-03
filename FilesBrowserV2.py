@@ -17,70 +17,82 @@ def SetLenght(DirectoryList,Shift):
     elif len(DirectoryList)<=15: return len(DirectoryList)
     else: print("you fucked up:1")
 
-def ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift):
+def ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift,PartitionList,Column):
     pad = curses.newpad(20, 40)
     curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_RED)
     Lenght=SetLenght(DirectoryList,Shift)
     for x in range(0+Shift,Lenght):
         print(DirectoryList[x])
         if DirectoryList[x]=="..":
-            if x-Shift==ItemNumber:
+            if x-Shift==ItemNumber and Column==0:
                 pad.addstr(x-Shift, 0, DirectoryList[x], curses.color_pair(1))
                 ItemName=DirectoryList[x]
             else: pad.addstr(x-Shift, 0, DirectoryList[x])
         elif DirectoryList[x]!=".." and len(DirectoryList[x])>24:
-            if x-Shift==ItemNumber:
+            if x-Shift==ItemNumber and Column==0:
                 pad.addstr(x-Shift, 0, DirectoryList[x][0:20]+"...", curses.color_pair(1))
                 ItemName=DirectoryList[x]
             else: pad.addstr(x-Shift, 0, DirectoryList[x][0:20]+"...")
         elif DirectoryList[x]!=".." and len(DirectoryList[x])<=24:
-            if x-Shift==ItemNumber:
+            if x-Shift==ItemNumber and Column==0:
                 pad.addstr(x-Shift, 0, DirectoryList[x], curses.color_pair(1))
                 ItemName=DirectoryList[x]
             else: pad.addstr(x-Shift, 0, DirectoryList[x])
         else: print("you fucked up:2")
+    for x in range(0,len(PartitionList)):
+            if x-Shift==ItemNumber and Column==1:
+                pad.addstr(x-Shift, 30, PartitionList[x], curses.color_pair(1))
+            else: pad.addstr(x-Shift, 30, PartitionList[x])
     pad.addstr(18,0,"Press Ctrl+x for exit")
     pad.refresh(0, 0, 1, 0, 19, 39)
 
-def ScrollListUp(DirectoryList,Shift):
+def ScrollListUp(DirectoryList,Shift,Column):
     Shift-=15
     if Shift+0<0: Shift=0
-    ShowWhatDirectoryContains(DirectoryList,0,Shift)
+    ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift,PartitionList,Column)
     return [Shift, 0]
 
-def ScrollListDown(DirectoryList,Shift):
+def ScrollListDown(DirectoryList,Shift,Column):
     Shift+=15
-    if Shift+len(DirectoryList)>len(DirectoryList):
+    if len(DirectoryList)<15: Shift-=15
+    elif Shift+len(DirectoryList)>len(DirectoryList):
         Shift=len(DirectoryList)-Shift
-    ShowWhatDirectoryContains(DirectoryList,0,Shift)
+    ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift,PartitionList,Column)
     return [Shift, 0]
 
-def LowerItem(DirectoryList,ItemNumber):
+def LowerItem(DirectoryList,ItemNumber,Column):
     ItemNumber+=1
     if ItemNumber>14 and len(DirectoryList)>15:
         ItemNumber=0
     elif len(DirectoryList)<=15 and ItemNumber>len(DirectoryList)-1:
         ItemNumber=0
-    ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift)
+    ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift,PartitionList,Column)
     return ItemNumber
 
-def UpperItem(DirectoryList,ItemNumber):
+def UpperItem(DirectoryList,ItemNumber,Column):
     ItemNumber-=1
     if ItemNumber<0 and len(DirectoryList)<15:
         ItemNumber=len(DirectoryList)-1
     elif ItemNumber <0 and len(DirectoryList)>=15:
         ItemNumber=14
-    ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift)
+    ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift,PartitionList,Column)
     return ItemNumber
 
-def ChangeDirectory(ItemNumber,DirectoryList,Shift):
+def ChangeDirectory(ItemNumber,DirectoryList,Shift,Column):
     if os.path.isdir(DirectoryList[ItemNumber+Shift]):
         os.chdir(DirectoryList[ItemNumber+Shift])
         DirectoryList=SetDirectoryList()
         Shift=0
         ItemNumber=0
-        ShowWhatDirectoryContains(DirectoryList, ItemNumber, Shift)
+    ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift,PartitionList,Column)
     return [ItemNumber, DirectoryList, Shift]
+
+def SwitchColumn(DirectoryList,Shift,PartitionList,Column):
+    if Column==1:Column=0
+    elif Column==0:Column=1
+    else: print("you fucked up:3")
+    ShowWhatDirectoryContains(DirectoryList,0,Shift,PartitionList,Column)
+    return [Column,0]
 
 
 os.system("mode con cols=40 lines=20")
@@ -96,9 +108,9 @@ PartitionList=[]
 c=wmi.WMI()
 for disk in c.Win32_LogicalDisk(DriveType=3):
     PartitionList.append(disk.name)
-ColumnNumber=0
+Column=0
 DirectoryList=SetDirectoryList()
-ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift)
+ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift,PartitionList,Column)
 
 while True:
     key=stdscr.getch()
@@ -106,27 +118,25 @@ while True:
     if key==24: break
     #Up_Arrow
     elif key==258:
-        ItemNumber=LowerItem(DirectoryList,ItemNumber)
+        ItemNumber=LowerItem(DirectoryList,ItemNumber,Column)
     #Down_Arrow
     elif key==259:
-        ItemNumber=UpperItem(DirectoryList,ItemNumber)
-    # #Left_Arrow
-    # elif key==260:
-    #     ColumnNumber=SwitchColumn(ItemNumber,PartitionList,key,ColumnNumber)
-    #     ShowWhatDirectoryContains(DirectoryList,ItemNumber,PartitionList,ColumnNumber,Lenght,Shift)
-    # #Right_Arrow
-    # elif key==261:
-    #     ColumnNumber=SwitchColumn(ItemNumber,PartitionList,key,ColumnNumber)
-    #     ShowWhatDirectoryContains(DirectoryList,ItemNumber,PartitionList,ColumnNumber,Lenght,Shift)
+        ItemNumber=UpperItem(DirectoryList,ItemNumber,Column)
+    #Left_Arrow
+    elif key==260:
+        Column,ItemNumber=SwitchColumn(DirectoryList,Shift,PartitionList,Column)
+    #Right_Arrow
+    elif key==261:
+        Column,ItemNumber=SwitchColumn(DirectoryList,Shift,PartitionList,Column)
     #Enter
     elif key==10:
-        ItemNumber, DirectoryList, Shift=ChangeDirectory(ItemNumber,DirectoryList,Shift)
+        ItemNumber, DirectoryList, Shift=ChangeDirectory(ItemNumber,DirectoryList,Shift,Column)
     # Page Up 339
     elif key == 339:
-        Shift, ItemNumber=ScrollListUp(DirectoryList,Shift)
+        Shift, ItemNumber=ScrollListUp(DirectoryList,Shift,Column)
     # Page Down 338
     elif key == 338:
-        Shift, ItemNumber=ScrollListDown(DirectoryList,Shift)
+        Shift, ItemNumber=ScrollListDown(DirectoryList,Shift,Column)
     else: print(key)
 
 curses.nocbreak()
