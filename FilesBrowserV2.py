@@ -2,6 +2,7 @@ import os
 import curses
 import wmi
 import sys
+import shutil
 
 def SetDirectoryList():
     List=[]
@@ -22,8 +23,7 @@ def ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift,PartitionList,Colum
     curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_RED)
     Lenght=SetLenght(DirectoryList,Shift)
     for x in range(0+Shift,Lenght):
-        print(DirectoryList[x])
-        if DirectoryList[x]=="..":
+        if x==0 and DirectoryList[x]=="..":
             if x-Shift==ItemNumber and Column==0:
                 pad.addstr(x-Shift, 0, DirectoryList[x], curses.color_pair(1))
                 ItemName=DirectoryList[x]
@@ -43,22 +43,28 @@ def ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift,PartitionList,Colum
             if x==ItemNumber and Column==1:
                 pad.addstr(x, 30, PartitionList[x], curses.color_pair(1))
             else: pad.addstr(x, 30, PartitionList[x])
-    string=("Shift="+str(Shift))
-    pad.addstr(18,0,string)
-    pad.addstr(19,0,"Esc=exit | Ctrl+C=copy | Ctrl+X=cut")
+    string=("Shift="+str(Shift)+" Lenght="+str(len(DirectoryList)))
+    pad.addstr(17,0,string)
+    pad.addstr(18,0,"Ctrl+C=copy | Ctrl+X=cut | Ctrl+V=paste")
+    pad.addstr(19,0,"Esc=exit | Ctrl+Z=abort operation")
     pad.refresh(0, 0, 0, 0, 19, 39)
 
 def ScrollListUp(DirectoryList,Shift,Column):
     Shift-=15
     if Shift+0<0 and Column==0: Shift=0
+    DirectoryList = SetDirectoryList()
     ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift,PartitionList,Column)
     return [Shift, 0]
 
 def ScrollListDown(DirectoryList,Shift,Column):
     Shift+=15
-    if len(DirectoryList)<15 and Column==0: Shift-=15
-    elif Shift+len(DirectoryList)>len(DirectoryList):
-        Shift=len(DirectoryList)-Shift
+    if len(DirectoryList)<=15 and Column==0: Shift=0
+    elif Shift>len(DirectoryList):
+        Shift=len(DirectoryList)-15
+        # x=Shift-len(DirectoryList)
+        # Shift-=15
+        # Shift+=x
+    DirectoryList = SetDirectoryList()
     ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift,PartitionList,Column)
     return [Shift, 0]
 
@@ -72,6 +78,7 @@ def LowerItem(DirectoryList,ItemNumber,Column):
         ItemNumber=(len(PartitionList)-1)
     elif Column==1 and ItemNumber>len(PartitionList)-1:
         ItemNumber=0
+    DirectoryList = SetDirectoryList()
     ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift,PartitionList,Column)
     return ItemNumber
 
@@ -85,6 +92,7 @@ def UpperItem(DirectoryList,ItemNumber,Column):
         ItemNumber=len(PartitionList)-1
     elif Column==1 and ItemNumber>len(PartitionList):
         ItemNumber=0
+    DirectoryList = SetDirectoryList()
     ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift,PartitionList,Column)
     return ItemNumber
 
@@ -107,8 +115,30 @@ def SwitchColumn(DirectoryList,Shift,PartitionList,Column):
     if Column==1:Column=0
     elif Column==0:Column=1
     else: print("you fucked up:3")
+    DirectoryList = SetDirectoryList()
     ShowWhatDirectoryContains(DirectoryList,0,Shift,PartitionList,Column)
     return [Column,0]
+
+def CopyItem(Copy, Cut, DirectoryList, ItemNumber, Shift, Column):
+    if Column==0 and Copy==0 and Cut==0:
+        return[(os.getcwd()+"\\"+DirectoryList[ItemNumber+Shift]),1]
+
+def CutItem(Copy, Cut, DirectoryList, ItemNumber, Shift, Column):
+    if Column == 0 and Copy == 0 and Cut == 0:
+        return [(os.getcwd() + "\\" + DirectoryList[ItemNumber + Shift]), 1]
+
+def AbortOperation():
+    return ["",0,0]
+
+def PasteItem(Copy, Cut, Source, DirectoryList, PartitionList, Column):
+    Destination=os.getcwd()
+    if Copy==1 and Column==0:
+        shutil.copy(Source,Destination)
+    elif Cut==1 and Column==0:
+        shutil.move(Source,Destination)
+    DirectoryList = SetDirectoryList()
+    ShowWhatDirectoryContains(DirectoryList, ItemNumber, Shift, PartitionList, Column)
+    return ["",0,0]
 
 
 os.system("mode con cols=40 lines=20")
@@ -125,6 +155,9 @@ c=wmi.WMI()
 for disk in c.Win32_LogicalDisk(DriveType=3):
     PartitionList.append(disk.name)
 Column=0
+Source=""
+Copy=0
+Cut=0
 DirectoryList=SetDirectoryList()
 ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift,PartitionList,Column)
 
@@ -154,9 +187,17 @@ while True:
     elif key == 338:
         Shift, ItemNumber=ScrollListDown(DirectoryList,Shift,Column)
     # Ctrl+Z
-    # Ctrl+X
+    elif key==26:
+        Source, Copy, Cut=AbortOperation()
+    # Ctrl+X 24
+    elif key==24:
+        Source, Cut=CutItem(Copy, Cut, DirectoryList, ItemNumber, Shift, Column)
     # Ctrl+C
+    elif key==3:
+        Source, Copy=CopyItem(Copy, Cut, DirectoryList, ItemNumber, Shift, Column)
     # Ctrl+V
+    elif key==22:
+        Source, Copy, Cut=PasteItem(Copy, Cut, Source, DirectoryList, PartitionList, Column)
     else: print(key)
 
 curses.nocbreak()
