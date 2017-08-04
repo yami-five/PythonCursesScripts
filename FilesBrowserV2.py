@@ -40,21 +40,23 @@ def ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift,PartitionList,Colum
             else: pad.addstr(x-Shift, 0, DirectoryList[x])
         else: print("you fucked up:2")
     for x in range(0,len(PartitionList)):
-            if x-Shift==ItemNumber and Column==1:
-                pad.addstr(x-Shift, 30, PartitionList[x], curses.color_pair(1))
-            else: pad.addstr(x-Shift, 30, PartitionList[x])
-    pad.addstr(18,0,"Press Ctrl+x for exit")
-    pad.refresh(0, 0, 1, 0, 19, 39)
+            if x==ItemNumber and Column==1:
+                pad.addstr(x, 30, PartitionList[x], curses.color_pair(1))
+            else: pad.addstr(x, 30, PartitionList[x])
+    string=("Shift="+str(Shift))
+    pad.addstr(18,0,string)
+    pad.addstr(19,0,"Esc=exit | Ctrl+C=copy | Ctrl+X=cut")
+    pad.refresh(0, 0, 0, 0, 19, 39)
 
 def ScrollListUp(DirectoryList,Shift,Column):
     Shift-=15
-    if Shift+0<0: Shift=0
+    if Shift+0<0 and Column==0: Shift=0
     ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift,PartitionList,Column)
     return [Shift, 0]
 
 def ScrollListDown(DirectoryList,Shift,Column):
     Shift+=15
-    if len(DirectoryList)<15: Shift-=15
+    if len(DirectoryList)<15 and Column==0: Shift-=15
     elif Shift+len(DirectoryList)>len(DirectoryList):
         Shift=len(DirectoryList)-Shift
     ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift,PartitionList,Column)
@@ -62,28 +64,42 @@ def ScrollListDown(DirectoryList,Shift,Column):
 
 def LowerItem(DirectoryList,ItemNumber,Column):
     ItemNumber+=1
-    if ItemNumber>14 and len(DirectoryList)>15:
+    if ItemNumber>14 and len(DirectoryList)>15 and Column==0:
         ItemNumber=0
-    elif len(DirectoryList)<=15 and ItemNumber>len(DirectoryList)-1:
+    elif len(DirectoryList)<=15 and ItemNumber>(len(DirectoryList)-1) and Column==0:
+        ItemNumber=0
+    elif Column==1 and ItemNumber<0:
+        ItemNumber=(len(PartitionList)-1)
+    elif Column==1 and ItemNumber>len(PartitionList)-1:
         ItemNumber=0
     ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift,PartitionList,Column)
     return ItemNumber
 
 def UpperItem(DirectoryList,ItemNumber,Column):
     ItemNumber-=1
-    if ItemNumber<0 and len(DirectoryList)<15:
+    if ItemNumber<0 and len(DirectoryList)<15 and Column==0:
         ItemNumber=len(DirectoryList)-1
-    elif ItemNumber <0 and len(DirectoryList)>=15:
+    elif ItemNumber <0 and len(DirectoryList)>=15 and Column==0:
         ItemNumber=14
+    elif Column==1 and ItemNumber<0:
+        ItemNumber=len(PartitionList)-1
+    elif Column==1 and ItemNumber>len(PartitionList):
+        ItemNumber=0
     ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift,PartitionList,Column)
     return ItemNumber
 
 def ChangeDirectory(ItemNumber,DirectoryList,Shift,Column):
-    if os.path.isdir(DirectoryList[ItemNumber+Shift]):
-        os.chdir(DirectoryList[ItemNumber+Shift])
-        DirectoryList=SetDirectoryList()
-        Shift=0
-        ItemNumber=0
+    if Column==0:
+        if os.path.isdir(DirectoryList[ItemNumber+Shift]) and os.access(DirectoryList[ItemNumber+Shift], os.R_OK)==True:
+            os.chdir(DirectoryList[ItemNumber+Shift])
+            DirectoryList=SetDirectoryList()
+            Shift=0
+            ItemNumber=0
+    elif Column==1:
+        os.chdir(PartitionList[ItemNumber])
+        DirectoryList = SetDirectoryList()
+        Shift = 0
+        ItemNumber = 0
     ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift,PartitionList,Column)
     return [ItemNumber, DirectoryList, Shift]
 
@@ -114,8 +130,8 @@ ShowWhatDirectoryContains(DirectoryList,ItemNumber,Shift,PartitionList,Column)
 
 while True:
     key=stdscr.getch()
-    #Ctrl+x
-    if key==24: break
+    #Esc
+    if key==27: break
     #Up_Arrow
     elif key==258:
         ItemNumber=LowerItem(DirectoryList,ItemNumber,Column)
@@ -137,6 +153,10 @@ while True:
     # Page Down 338
     elif key == 338:
         Shift, ItemNumber=ScrollListDown(DirectoryList,Shift,Column)
+    # Ctrl+Z
+    # Ctrl+X
+    # Ctrl+C
+    # Ctrl+V
     else: print(key)
 
 curses.nocbreak()
