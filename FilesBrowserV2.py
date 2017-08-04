@@ -59,7 +59,7 @@ def ScrollListUp(DirectoryList,Shift,Column):
 def ScrollListDown(DirectoryList,Shift,Column):
     Shift+=15
     if len(DirectoryList)<=15 and Column==0: Shift=0
-    elif Shift>len(DirectoryList):
+    elif Shift+15>len(DirectoryList):
         Shift=len(DirectoryList)-15
         # x=Shift-len(DirectoryList)
         # Shift-=15
